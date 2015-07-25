@@ -22,8 +22,31 @@ const long long N = 1000;                // number of closest words that will be
 const long long max_w = 50;              // max length of vocabulary entries
 const float Thres = 0.5;                 //Nguong loc cac quan he
 
+//Khai bao cac kieu du  lieu moi dung de xay dung do thi cho chuong trinh
+
+//Luu tru dinh ke
+struct Ke {
+    long long position; //vi tri cua dinh trong danh sach tu vung
+    float distance; //gia tri cosine distance giua node goc va not ke dang xet
+    struct Ke *nextNode; //Con tro tro den dinh khac
+};
+//Luu tru cap dinh tao voi dinh dang xet mot  tam giac
+struct Cap{
+    long long minNode;//Giu dinh co vi tri nho trong cap dinh
+    long long maxNode;//Giu dinh co vi tri lon trong cap dinh
+    struct Cap *nextNode; //Con tro tro den dinh khac
+    
+};
+
+struct Dinh{
+    struct Ke *keList; // Con tro tro den danh sach cac dinh ke
+    struct Cap *capList;//Con tro tro den danh sach cac cap dinh tao voi dinh dang xet tam giac
+    long  numCap;//So cap tao voi dinh dang xet mot tam giac
+    char tu[max_size]; //Tu duoc luu tru trong node nay
+};
+
 int main(int argc, char **argv) {
-  FILE *f; // file bin dau vao
+  FILE *f , *file; // file bin dau vao
   char st1[max_size];
   char *bestw[N]; //Mang chua cac tu co quan he manh nhat voi tu vung nhap vao
   char file_name[max_size], st[100][max_size];
@@ -33,12 +56,11 @@ int main(int argc, char **argv) {
   float *M;
   char *vocab;
   float debug;
-//  if (argc < 2) {
-//    printf("Usage: ./distance <FILE>\nwhere FILE contains word projections in the BINARY FORMAT\n");
-//    return 0;
-//  }
-//  strcpy(file_name, argv[1]);
+  char line[256];
   
+  //FIle từ vựng
+   file = fopen("vocab.txt", "r");
+  //File từ đã được  luyện
   strcpy(file_name,"restaurant.bin");
   f = fopen(file_name, "rb");
   if (f == NULL) {
@@ -47,11 +69,7 @@ int main(int argc, char **argv) {
   }
   fscanf(f, "%lld", &words); //gan so tu vung co trong file cho bien words
   fscanf(f, "%lld", &size);
-  fscanf(f, "%lld", &a); //gan so tu vung co trong file cho bien words
-  fscanf(f, "%lld", &b);
-    fscanf(f, "%lld", &c); //gan so tu vung co trong file cho bien words
-  fscanf(f, "%lld", &d);
-   
+    
   debug = (long long)words * max_w * sizeof(char);
   vocab = (char *)malloc((long long)words * max_w * sizeof(char));
   for (a = 0; a < N; a++) bestw[a] = (char *)malloc(max_size * sizeof(char)); //Khoi tao bo nho cho nhung tu tim duoc
@@ -76,7 +94,7 @@ int main(int argc, char **argv) {
     for (a = 0; a < size; a++) M[a + b * size] /= len;
   }
   fclose(f);
-  while (1) {
+  while (fgets(line, sizeof(line), file)) {
     for (a = 0; a < N; a++) bestd[a] = 0;
     for (a = 0; a < N; a++) bestw[a][0] = 0;
     printf("Enter word or sentence (EXIT to break): ");
@@ -90,6 +108,8 @@ int main(int argc, char **argv) {
       a++;
     }
     if (!strcmp(st1, "EXIT")) break;
+    
+    
     cn = 0;
     b = 0;
     c = 0;
@@ -150,10 +170,13 @@ int main(int argc, char **argv) {
     for (a = 0; a < N; a++){
         if(bestd[a] > Thres){
             printf("%50s\t\t%f\n", bestw[a], bestd[a]);
-
+            //Viet code xay dung do thi o day
         }
     }
         
   }
   return 0;
+}
+void buildTree(){
+  
 }
