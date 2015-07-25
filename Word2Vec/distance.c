@@ -17,8 +17,8 @@
 #include <math.h>
 #include <malloc.h>
 
-const long long max_size = 2000;         // max length of strings
-const long long N = 1000;                // number of closest words that will be shown
+const long long max_size = 100;         // max length of strings
+const long long N = 500;                // number of closest words that will be shown
 const long long max_w = 50;              // max length of vocabulary entries
 const float Thres = 0.5;                 //Nguong loc cac quan he
 
@@ -42,7 +42,7 @@ struct Dinh{
     struct Ke *keList; // Con tro tro den danh sach cac dinh ke
     struct Cap *capList;//Con tro tro den danh sach cac cap dinh tao voi dinh dang xet tam giac
     long  numCap;//So cap tao voi dinh dang xet mot tam giac
-    char tu[max_size]; //Tu duoc luu tru trong node nay
+    char tu[100]; //Tu duoc luu tru trong node nay
 };
 
 int main(int argc, char **argv) {
@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
   char *bestw[N]; //Mang chua cac tu co quan he manh nhat voi tu vung nhap vao
   char file_name[max_size], st[100][max_size];
   float dist, len, bestd[N], vec[max_size];
-  long long words, size, a, b, c, d, cn, bi[100];//Words la so tu vung trong file dau vao
+  long long words, size, i, a, b, c, d, cn, bi[100];//Words la so tu vung trong file dau vao
   char ch;
   float *M;
   char *vocab;
@@ -95,21 +95,27 @@ int main(int argc, char **argv) {
   }
   fclose(f);
   while (fgets(line, sizeof(line), file)) {
-    for (a = 0; a < N; a++) bestd[a] = 0;
-    for (a = 0; a < N; a++) bestw[a][0] = 0;
-    printf("Enter word or sentence (EXIT to break): ");
-    a = 0;
-    while (1) {
-      st1[a] = fgetc(stdin);
-      if ((st1[a] == '\n') || (a >= max_size - 1)) {
-        st1[a] = 0;
-        break;
-      }
-      a++;
+//    for (a = 0; a < N; a++) bestd[a] = 0;
+//    for (a = 0; a < N; a++) bestw[a][0] = 0;
+//    printf("Enter word or sentence (EXIT to break): ");
+//    a = 0;
+//    while (1) {
+//      st1[a] = fgetc(stdin);
+//      if ((st1[a] == '\n') || (a >= max_size - 1)) {
+//        st1[a] = 0;
+//        break;
+//      }
+//      a++;
+//    }
+//    if (!strcmp(st1, "EXIT")) break;
+      
+    for( i=0; i< 256; i++){
+        if((int)line[i] == 32){
+            line[i]='\0';
+            break;
+        }
     }
-    if (!strcmp(st1, "EXIT")) break;
-    
-    
+    strcpy(st1,line);
     cn = 0;
     b = 0;
     c = 0;
