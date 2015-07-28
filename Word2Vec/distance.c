@@ -56,8 +56,17 @@ int main(int argc, char **argv) {
   float *M;
   char *vocab;
   float debug;
-  char line[256];
+  char line[256]; 
+  long position[N]; //Mang luu vi tri cua tu co lien he cao voi tu dang xet
+  struct Dinh Node[2235];  //Mảng lưu trữ các đỉnh của đồ thị.Số đỉnh được tính trước từ file từ v
+  long curPos; // Luu tru thu tu cua tu dang xet
+  struct Ke *curKe; //Con tro trỏ vao node ke dang xet ,
+  struct Ke *headerKe;//con trỏ trỏ vào node đầu tiên của danh sách
+  struct Ke *tempKe;  //Trỏ đến vùng nhớ tạm thời của của node Kề
   
+  struct Cap *curCap; //Con trỏ trỏ vào node Cap đang xét , con trỏ trỏ vào node đầu tiến cảu 
+  struct Cap *headerCap; //Lưu trữ node đầu tiên của danh sách
+  struct Cap *tempCap;  //Trỏ đến vùng nhớ tạm thời của node Cap
   //FIle từ vựng
    file = fopen("vocab.txt", "r");
   //File từ đã được  luyện
@@ -136,14 +145,20 @@ int main(int argc, char **argv) {
       for (b = 0; b < words; b++) if (!strcmp(&vocab[b * max_w], st[a])) break;
       if (b == words) b = -1;
       bi[a] = b;
-      printf("\nWord: %s  Position in vocabulary: %lld\n", st[a], bi[a]);
+     // printf("\nWord: %s  Position in vocabulary: %lld\n", st[a], bi[a]);
       if (b == -1) {
         printf("Out of dictionary word!\n");
         break;
       }
     }
     if (b == -1) continue;
-    printf("\n                                              Word       Cosine distance\n------------------------------------------------------------------------\n");
+    //Xây dưng node của đồ thi
+    curPos = b;
+    strcpy(Node[curPos].tu,st1);
+
+    
+    
+   // printf("\n                                              Word       Cosine distance\n------------------------------------------------------------------------\n");
     for (a = 0; a < size; a++) vec[a] = 0;
     for (b = 0; b < cn; b++) {
       if (bi[b] == -1) continue;
@@ -166,20 +181,53 @@ int main(int argc, char **argv) {
           for (d = N - 1; d > a; d--) {
             bestd[d] = bestd[d - 1];
             strcpy(bestw[d], bestw[d - 1]);
+            position[d] = position[d-1];
           }
           bestd[a] = dist;
           strcpy(bestw[a], &vocab[c * max_w]);
+          position[a] = c;
           break;
         }
       }
     }
+    
+//    for (a = 0; a < N; a++){
+//        if(bestd[a] > Thres){
+//          printf("%50s\t\t%f\n",bestw[a], bestd[a]);
+//        }
+//    }
+        
     for (a = 0; a < N; a++){
         if(bestd[a] > Thres){
-            printf("%50s\t\t%f\n", bestw[a], bestd[a]);
+           // printf("%ld,%50s\t\t%f\n",position[a],bestw[a], bestd[a]);
             //Viet code xay dung do thi o day
+            tempKe = (struct Ke *)malloc(sizeof(struct Ke));
+            tempKe->distance = bestd[a];
+            tempKe->nextNode = NULL;
+            tempKe->position = position[a];
+            
+            if(a == 0){
+                headerKe = tempKe;
+                
+            }else{
+                curKe->nextNode = tempKe;
+            }
+            curKe = tempKe;
+            
         }
     }
-        
+    //Gán danh sách vừa tạo cho node đang xét
+    Node[curPos].keList = headerKe;
+    for(a =curPos; a<= curPos; a++){
+        printf("%s::\n",Node[a].tu);
+        curKe = Node[a].keList;
+        while(curKe!=NULL){
+            printf("%s  ",&vocab[curKe->position *  max_w]);
+            curKe = curKe->nextNode;
+        }
+        printf("\n");
+    }
+    b = 0;
   }
   return 0;
 }
