@@ -21,7 +21,7 @@ const long long max_size = 100;         // max length of strings
 const long long N = 500;                // number of closest words that will be shown
 const long long max_w = 50;              // max length of vocabulary entries
 const float Thres = 0.5;                 //Nguong loc cac quan he
-
+const float Thres1 = 1.65;                //Nguong loc tong cac trong so cua mot tam giac
 //Khai bao cac kieu du  lieu moi dung de xay dung do thi cho chuong trinh
 
 //Luu tru dinh ke
@@ -32,8 +32,9 @@ struct Ke {
 };
 //Luu tru cap dinh tao voi dinh dang xet mot  tam giac
 struct Cap{
-    long long minNode;//Giu dinh co vi tri nho trong cap dinh
-    long long maxNode;//Giu dinh co vi tri lon trong cap dinh
+    long long aNode;//Giu dinh co vi tri nho trong cap dinh
+    long long bNode;//Giu dinh co vi tri lon trong cap dinh
+    float subDistance; //Luu tru hieu distance cau hai dinh
     struct Cap *nextNode; //Con tro tro den dinh khac
     
 };
@@ -62,11 +63,11 @@ int main(int argc, char **argv) {
   long curPos; // Luu tru thu tu cua tu dang xet
   struct Ke *curKe; //Con tro trỏ vao node ke dang xet ,
   struct Ke *headerKe;//con trỏ trỏ vào node đầu tiên của danh sách
-  struct Ke *tempKe;  //Trỏ đến vùng nhớ tạm thời của của node Kề
+  struct Ke *tempKe,*tempKe1,*tempKe2;  //Trỏ đến vùng nhớ tạm thời của của node Kề
   
-  struct Cap *curCap; //Con trỏ trỏ vào node Cap đang xét , con trỏ trỏ vào node đầu tiến cảu 
+  struct Cap *curCap,*curCap1,*curCap2; //Con trỏ trỏ vào node Cap đang xét , con trỏ trỏ vào node đầu tiến cảu 
   struct Cap *headerCap; //Lưu trữ node đầu tiên của danh sách
-  struct Cap *tempCap;  //Trỏ đến vùng nhớ tạm thời của node Cap
+  struct Cap *tempCap,*tempCap1,*tempCap2;  //Trỏ đến vùng nhớ tạm thời của node Cap
   //FIle từ vựng
    file = fopen("vocab.txt", "r");
   //File từ đã được  luyện
@@ -155,6 +156,7 @@ int main(int argc, char **argv) {
     //Xây dưng node của đồ thi
     curPos = b;
     strcpy(Node[curPos].tu,st1);
+    Node[curPos].numCap = 0;
 
     
     
@@ -216,19 +218,133 @@ int main(int argc, char **argv) {
             
         }
     }
-    //Gán danh sách vừa tạo cho node đang xét
-    Node[curPos].keList = headerKe;
-    for(a =curPos; a<= curPos; a++){
-        printf("%s::\n",Node[a].tu);
-        curKe = Node[a].keList;
-        while(curKe!=NULL){
-            printf("%s  ",&vocab[curKe->position *  max_w]);
-            curKe = curKe->nextNode;
-        }
-        printf("\n");
-    }
-    b = 0;
+    
+  //Gán danh sách vừa tạo cho node đang xét
+      Node[curPos].keList = headerKe;
+      
+      
+      
+//    for(a =curPos; a<= curPos; a++){
+//        printf("%s::\n",Node[a].tu);
+//        curKe = Node[a].keList;
+//        while(curKe!=NULL){
+//            printf("%s  ",&vocab[curKe->position *  max_w]);
+//            curKe = curKe->nextNode;
+//        }
+//        printf("\n");
+//    }
+    
+    
+    
+    
+    
   }
+  //Duyệt cây ở đây
+  for(a =0; a< words; a++){
+      curKe = Node[a].keList;
+      while(curKe != NULL){
+          if(curKe->position < a){   //Neu vi tri cua node con dang xet nho hon Node chinh dang xet ta bo qua,duyet node con tiep theo
+              curKe = curKe->nextNode;
+              continue;
+          }
+          tempKe = Node[curKe->position].keList;  //Gan tempKe dia chi cua node dau tien cua list node ke cua Node con dang xet
+          //Tim cac node la node ke chung cua hai Node chinh o vi tri a va vi tri curKe->position
+          tempKe1 = curKe->nextNode;
+          tempKe2 = Node[curKe->position].keList;
+          while(tempKe2 != NULL){
+              if(tempKe2->position == a){
+                  tempKe2 = tempKe2 ->nextNode;
+                  continue;
+              }
+              while(tempKe1 != NULL){
+                  if(tempKe2->position != tempKe1->position){
+                      tempKe1 = tempKe1->nextNode;
+                      continue;
+                  }
+                  if(curKe->distance + tempKe1->distance + tempKe2->distance <= Thres1){
+                      tempKe1 = tempKe1->nextNode;
+                      continue;
+                  }//Loc qua threshold 1.Chi nhung tam giac co tong trong so lon hon Thres1 moi duoc xet
+                  
+                  //Tao list cac cap dinh tao thanh tam gia voi dinh dang xet
+                  tempCap = (struct Cap *)malloc(sizeof(struct Cap));
+                  tempCap->aNode = curKe->position;
+                  tempCap->bNode = tempKe1->position;
+                  tempCap->subDistance = curKe->distance-tempKe1->distance >=0 ?curKe->distance - tempKe1->distance:tempKe1->distance - curKe->distance;
+                  tempCap->nextNode = NULL;
+                  if(Node[a].numCap == 0){
+                      Node[a].capList = tempCap;
+                  }else{
+                      curCap = Node[a].capList;
+                      while(curCap->nextNode != NULL){
+                          curCap = curCap->nextNode;
+                      }
+                      curCap->nextNode = tempCap;
+                  }
+                  curCap = tempCap;
+                  Node[a].numCap++;
+                  
+                 //Tao node cho hai dinh ke cua dinh dang xet
+                  tempCap1 = (struct Cap *)malloc(sizeof(struct Cap));
+                  tempCap1->aNode = a;
+                  tempCap1->bNode = tempKe1->position;
+                  tempCap1->subDistance = curKe->distance-tempKe2->distance >= 0 ? curKe->distance-tempKe2->distance : tempKe2->distance - curKe->distance;
+                  tempCap1->nextNode = NULL;
+                  
+                  if(Node[curKe->position].numCap == 0){
+                    Node[curKe->position].capList = tempCap1;
+                  }else{
+                      curCap1 = Node[curKe->position].capList;
+                      while(curCap1->nextNode != NULL){
+                          curCap1 = curCap1->nextNode;
+                      }
+                      curCap1->nextNode = tempCap1;
+                  }
+                  curCap1 = tempCap1;
+                  Node[curKe->position].numCap++;
+                  
+                  //Tao node Cap cho dinh la dinh chung tim duoc
+                  tempCap2 = (struct Cap *)malloc(sizeof(struct Cap));
+                  tempCap2->aNode = a;
+                  tempCap2->bNode = curKe->position;
+                  tempCap2->subDistance = tempKe1->distance - tempKe2->distance >= 0 ?tempKe1->distance - tempKe2->distance:tempKe2->distance - tempKe1->distance;
+                  tempCap2->nextNode = NULL;
+                  
+                  if(Node[tempKe1->position].numCap == 0){
+                    Node[tempKe1->position].capList = tempCap2;
+                  }else{
+                      curCap2 = Node[tempKe1->position].capList;
+                      while(curCap2->nextNode != NULL){
+                          curCap2 = curCap2->nextNode;
+                      }
+                      curCap2->nextNode = tempCap2;
+                  }
+                  curCap2 = tempCap2;
+                  Node[tempKe1->position].numCap++;
+                  
+                  tempKe1 = tempKe1->nextNode;
+              }
+              
+              tempKe2 = tempKe2->nextNode;
+          }
+          
+          curKe = curKe->nextNode;
+      }
+  }
+  
+  //Test phan list Cap trong cay
+  for(a =0; a< words; a++){
+      printf("%s :: %ld \n",&vocab[a * max_w],Node[a].numCap);
+      tempCap = Node[a].capList;
+      while(tempCap != NULL){
+          printf("(%s %s %f) ",&vocab[tempCap->aNode * max_w],&vocab[tempCap->bNode * max_w],tempCap->subDistance);
+          tempCap = tempCap->nextNode;
+      }
+      printf("\n");        
+  }
+  
+  
+  
   return 0;
 }
 void buildTree(){
