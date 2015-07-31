@@ -19,9 +19,14 @@
 
 const long long max_size = 100;         // max length of strings
 const long long N = 500;                // number of closest words that will be shown
-const long long max_w = 50;              // max length of vocabulary entries
-const float Thres = 0.5;                 //Nguong loc cac quan he
-const float Thres1 = 1.65;                //Nguong loc tong cac trong so cua mot tam giac
+const long long max_w = 100;              // max length of vocabulary entries
+const float Thres = 0.6;                 //Nguong loc cac quan he
+const float Thres1 = 2.7;                //Nguong loc tong cac trong so cua mot tam giac
+const long  Thres2 = 50;                   //Nguong loc so tam giac tao voi 1 dinh
+const float Thres3 = 0.01;                //Nguong de phan cum cap cap tao thanh tam giac voi dinh dang xet
+const float Thres4 = 5;                   //Nguong de loc mat do cac cum tu trong mot khoang
+const float Step = 0.01;                  //Khoang cach thong ke mat tu cac cum tu
+
 //Khai bao cac kieu du  lieu moi dung de xay dung do thi cho chuong trinh
 
 //Luu tru dinh ke
@@ -55,11 +60,12 @@ int main(int argc, char **argv) {
   long long words, size, i, a, b, c, d, cn, bi[100];//Words la so tu vung trong file dau vao
   char ch;
   float *M;
+  float *matrix; //Luu tru vung nho ma tran tam thoi trong viec phan cum cac cap
   char *vocab;
   float debug;
   char line[256]; 
   long position[N]; //Mang luu vi tri cua tu co lien he cao voi tu dang xet
-  struct Dinh Node[2235];  //Mảng lưu trữ các đỉnh của đồ thị.Số đỉnh được tính trước từ file từ v
+  struct Dinh Node[2928];  //Mảng lưu trữ các đỉnh của đồ thị.Số đỉnh được tính trước từ file từ v
   long curPos; // Luu tru thu tu cua tu dang xet
   struct Ke *curKe; //Con tro trỏ vao node ke dang xet ,
   struct Ke *headerKe;//con trỏ trỏ vào node đầu tiên của danh sách
@@ -68,6 +74,8 @@ int main(int argc, char **argv) {
   struct Cap *curCap,*curCap1,*curCap2; //Con trỏ trỏ vào node Cap đang xét , con trỏ trỏ vào node đầu tiến cảu 
   struct Cap *headerCap; //Lưu trữ node đầu tiên của danh sách
   struct Cap *tempCap,*tempCap1,*tempCap2;  //Trỏ đến vùng nhớ tạm thời của node Cap
+  float density[21];  //Màng dùng để thống kê tần xuất của các cụm từ trong từng khoảng
+  int isNextLine = 0; //Co danh dau xem co xuong dong khong
   //FIle từ vựng
    file = fopen("vocab.txt", "r");
   //File từ đã được  luyện
@@ -333,20 +341,86 @@ int main(int argc, char **argv) {
   }
   
   //Test phan list Cap trong cay
+//  for(a =0; a< words; a++){
+//      printf("%s :: %ld \n",&vocab[a * max_w],Node[a].numCap);
+//      tempCap = Node[a].capList;
+//      while(tempCap != NULL){
+//          printf("(%s %s %f) ",&vocab[tempCap->aNode * max_w],&vocab[tempCap->bNode * max_w],tempCap->subDistance);
+//          tempCap = tempCap->nextNode;
+//      }
+//      printf("\n");        
+//  }
+  
+  
+  //Dua ra nhung tu tiem nang
+//  for(a =0; a< words; a++){
+//      if(Node[a].numCap >= Thres2){
+//      printf("%s :: %ld \n",&vocab[a * max_w],Node[a].numCap);
+//      tempCap = Node[a].capList;
+//      while(tempCap != NULL){
+//          printf("(%s %s %f) ",&vocab[tempCap->aNode * max_w],&vocab[tempCap->bNode * max_w],tempCap->subDistance);
+//          tempCap = tempCap->nextNode;
+//      }     
+//      printf("\n");
+//          
+//      }
+//  }
+  
+  //Phan cụm hiệu số quan hệ của các cặp từ của một từ
   for(a =0; a< words; a++){
-      printf("%s :: %ld \n",&vocab[a * max_w],Node[a].numCap);
-      tempCap = Node[a].capList;
-      while(tempCap != NULL){
-          printf("(%s %s %f) ",&vocab[tempCap->aNode * max_w],&vocab[tempCap->bNode * max_w],tempCap->subDistance);
-          tempCap = tempCap->nextNode;
+      //Loc neu co so cap nho hon Thres2 thi se loai di
+      if(Node[a].numCap <= Thres2){
+          continue;
       }
-      printf("\n");        
+      curCap = Node[a].capList;
+      
+      //Thong ke mat do hieu khoang cach cac cum tu
+      while(curCap != NULL){
+          if(0 <= curCap->subDistance && curCap->subDistance < 0.2){
+             for(b=0;b < 20 ; b++){
+              if(b* Step <= curCap->subDistance && curCap->subDistance < (b+1)*Step ){
+                  density[b]++;
+                  break;
+              }            
+            }
+          }else{
+              density[20]++;
+          
+          }
+           
+          curCap = curCap->nextNode;
+          
+      }
+  //In tu vung va cac cum tu co moi lien he mat thiet voi tu do ra man hinh
+      printf("----------------------------------------------------------------------------------------- \n");
+      printf("%s có %ld cụm \n" , &vocab[a * max_w],Node[a].numCap);
+      curCap = Node[a].capList;
+      isNextLine = 0;  //Neu hai khoang lien tiep deu duoi nguong thi khong xuong dong
+      for(b =0; b < 21 ;b++){
+          if(density[b] > Thres4){
+              while(curCap != NULL){
+                  if(b*Step <= curCap->subDistance && curCap->subDistance <(b+1)*Step ){
+                      printf("(%s %s) ",&vocab[curCap->aNode * max_w],&vocab[curCap->bNode * max_w]);
+                  }
+                  curCap = curCap->nextNode;
+              
+              }
+              isNextLine = 1;  //Neu vua in ra thi dat la khong,chi can gap trong mot cai la xuong dong luon
+          }else{
+              if(isNextLine){
+                  isNextLine = 0;
+                  printf("\n \n");
+              }
+              
+          }
+          
+          curCap = Node[a].capList;
+          //density[b] khi dung xong duoc gan tro lai bang 0
+          density[b] = 0;
+      }
+  
   }
-  
-  
+ 
   
   return 0;
-}
-void buildTree(){
-  
 }
